@@ -1,0 +1,67 @@
+/******************************************************************************
+* Copyright (c) 2000-2021 Ericsson Telecom AB
+* All rights reserved. This program and the accompanying materials
+* are made available under the terms of the Eclipse Public License v2.0
+* which accompanies this distribution, and is available at
+* https://www.eclipse.org/org/documents/epl-2.0/EPL-2.0.html
+*
+* Contributors:
+*   Balasko, Jeno
+*   Lovassy, Arpad
+*   Szabo, Janos Zoltan – initial implementation
+*
+******************************************************************************/
+// TTCN-3 version of "Hello, world!"
+module MyExample
+{
+type port PCOType message
+{
+  inout charstring;
+}
+
+type component MTCType
+{
+  port PCOType MyPCO;
+}
+
+testcase HelloW() runs on MTCType system MTCType
+{
+  map(mtc:MyPCO, system:MyPCO);
+  MyPCO.send("Hello, world1!");
+  setverdict(pass);
+}
+
+testcase HelloW1() runs on MTCType system MTCType
+{
+  timer T := 10.0;
+  map(mtc:MyPCO, system:MyPCO);
+  MyPCO.send("Hello!");
+  T.start;
+  alt {
+    [] MyPCO.receive("hi") { T.stop; setverdict(pass); }
+    [] T.timeout { setverdict(inconc); }
+    [] MyPCO.receive { T.stop; setverdict(fail); }
+  }
+  unmap(mtc:MyPCO, system:MyPCO);
+}
+
+testcase HelloW2() runs on MTCType system MTCType
+{
+  timer T := 10.0;
+  map(mtc:MyPCO, system:MyPCO);
+  MyPCO.send("Good Bye!");
+  T.start;
+  alt {
+    [] MyPCO.receive("bye") { T.stop; setverdict(pass); }
+    [] T.timeout { setverdict(inconc); }
+    [] MyPCO.receive { T.stop; setverdict(fail); }
+  }
+  unmap(mtc:MyPCO, system:MyPCO);
+}
+
+control
+{
+  execute(HelloW1());
+  execute(HelloW2());
+}
+}
