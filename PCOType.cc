@@ -245,7 +245,7 @@ void PCOType::outgoing_send(const CHARSTRING& send_par)
 	//puts((const char*)send_par);
 	//incoming_message("Hello, TTCN-3!");//receive
 	//fflush(stdout);
-	char PAYLOAD[50];
+	char PAYLOAD[256];
 	sprintf(PAYLOAD, "%s", (const char*)send_par);
 	pubmsg.payload = PAYLOAD;
     pubmsg.payloadlen =  (int)strlen(PAYLOAD);
@@ -258,9 +258,48 @@ void PCOType::outgoing_send(const CHARSTRING& send_par)
     }
 }
 
+void PCOType::outgoing_send(const MQTT__Data& send_par)
+{
+	//puts("outgoing_send(const MQTT__Data& send_par)");
+	char PAYLOAD[256];
+	sprintf(PAYLOAD, "%s", (const char*)send_par.data());
+	pubmsg.payload = PAYLOAD;
+    pubmsg.payloadlen =  (int)strlen(PAYLOAD);
+    pubmsg.qos = QOS;
+    pubmsg.retained = 0;
+	if(send_par.pub().ispresent()){
+		if ((rc = MQTTClient_publishMessage(client, (const char*)send_par.pub()(), &pubmsg, &token)) != MQTTCLIENT_SUCCESS)
+    	{
+         	printf("Failed to publish message, return code %d\n", rc);
+         	exit(EXIT_FAILURE);
+    	}
+		if(send_par.sub().ispresent()){
+			if ((rc = MQTTClient_subscribe(client, (const char*)send_par.sub()(), QOS)) != MQTTCLIENT_SUCCESS)
+    		{
+    			printf("Failed to subscribe, return code %d\n", rc);
+    			rc = EXIT_FAILURE;
+    		}
+		}
+	}
+	else{
+		if ((rc = MQTTClient_publishMessage(client, TOPIC, &pubmsg, &token)) != MQTTCLIENT_SUCCESS)
+    	{
+         	printf("Failed to publish message, return code %d\n", rc);
+         	exit(EXIT_FAILURE);
+    	}
+		if(send_par.sub().ispresent()){
+			if ((rc = MQTTClient_subscribe(client, (const char*)send_par.sub()(), QOS)) != MQTTCLIENT_SUCCESS)
+    		{
+    			printf("Failed to subscribe, return code %d\n", rc);
+    			rc = EXIT_FAILURE;
+    		}
+		}
+	}
+}
+
 void PCOType::delivered(void *context, MQTTClient_deliveryToken dt)
 {
-    printf("Message with token value %d delivery confirmed\n", dt);
+    //printf("Message with token value %d delivery confirmed\n", dt);
     //deliveredtoken = dt;
 }
 

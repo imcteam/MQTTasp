@@ -14,9 +14,19 @@
 // TTCN-3 version of "Hello, world!"
 module MyExample
 {
+  type charstring Topic;
+  type charstring Data;
+
+  type record MQTT_Data {    // kept for compatibility
+	  Data       data,
+	  Topic       pub optional,
+    Topic       sub optional
+  }
+
 type port PCOType message
 {
   inout charstring;
+  out  MQTT_Data;
 }
 
 type component MTCType
@@ -24,16 +34,42 @@ type component MTCType
   port PCOType MyPCO;
 }
 
-testcase HelloW() runs on MTCType system MTCType
+testcase HelloW0() runs on MTCType system MTCType
 {
+  var MQTT_Data send1 := {"hello", "pub_test","TTCN1"};
+  timer T := 20.0;
   map(mtc:MyPCO, system:MyPCO);
-  MyPCO.send("Hello, world1!");
-  setverdict(pass);
+  MyPCO.send(send1);
+  T.start;
+  alt {
+    [] MyPCO.receive("hi") { T.stop; }
+    [] T.timeout { setverdict(inconc); }
+    [] MyPCO.receive { T.stop; setverdict(fail); }
+  }
+
+  var MQTT_Data send2 := {"hello2", "pub_test",omit};
+  MyPCO.send(send2);
+  T.start;
+  alt {
+    [] MyPCO.receive("hi") { T.stop;}
+    [] T.timeout { setverdict(inconc); }
+    [] MyPCO.receive { T.stop; setverdict(fail); }
+  }
+
+  var MQTT_Data send3 := {"hello3", omit,omit};
+  MyPCO.send(send3);
+  T.start;
+  alt {
+    [] MyPCO.receive("hi") { T.stop; setverdict(pass); }
+    [] T.timeout { setverdict(inconc); }
+    [] MyPCO.receive { T.stop; setverdict(fail); }
+  }
+  unmap(mtc:MyPCO, system:MyPCO);
 }
 
 testcase HelloW1() runs on MTCType system MTCType
 {
-  timer T := 10.0;
+  timer T := 20.0;
   map(mtc:MyPCO, system:MyPCO);
   MyPCO.send("Hello!");
   T.start;
@@ -47,7 +83,7 @@ testcase HelloW1() runs on MTCType system MTCType
 
 testcase HelloW2() runs on MTCType system MTCType
 {
-  timer T := 10.0;
+  timer T := 20.0;
   map(mtc:MyPCO, system:MyPCO);
   MyPCO.send("Good Bye!");
   T.start;
@@ -61,6 +97,7 @@ testcase HelloW2() runs on MTCType system MTCType
 
 control
 {
+  execute(HelloW0());
   execute(HelloW1());
   execute(HelloW2());
 }

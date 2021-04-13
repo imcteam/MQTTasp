@@ -66,6 +66,7 @@ protected:
 	void user_stop();
 
 	void outgoing_send(const CHARSTRING& send_par);
+	void outgoing_send(const MQTT__Data& send_par);
 	void setUpSocket();
 	void closeDownSocket();
 	//unsigned long getHostId(const char* destHostName);

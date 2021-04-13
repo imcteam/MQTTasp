@@ -28,7 +28,7 @@ void delivered(void *context, MQTTClient_deliveryToken dt)
 int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *message)
 {
     //printf("Message arrived\n");
-    //printf("     topic: %s\n", topicName);
+    printf("topic: %s\n", topicName);
     printf("TTCN-3: %.*s\n", message->payloadlen, (char*)message->payload);
     MQTTClient_freeMessage(&message);
     MQTTClient_free(topicName);
@@ -73,6 +73,12 @@ int main(int argc, char* argv[])
     }
 
     if ((rc = MQTTClient_subscribe(client, TOPIC2, QOS)) != MQTTCLIENT_SUCCESS)
+    {
+    	printf("Failed to subscribe, return code %d\n", rc);
+    	rc = EXIT_FAILURE;
+    }
+
+    if ((rc = MQTTClient_subscribe(client, "pub_test", QOS)) != MQTTCLIENT_SUCCESS)
     {
     	printf("Failed to subscribe, return code %d\n", rc);
     	rc = EXIT_FAILURE;
