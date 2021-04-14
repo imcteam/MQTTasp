@@ -30,6 +30,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <string.h>
+#include <string>
 #include <sys/select.h>
 #include <sys/time.h>
 #include <sys/socket.h>
@@ -57,6 +58,8 @@ private:
     int rc;
 	int target_fd;
 	struct sockaddr_in localAddr;
+	char BrokerAddress[250];
+	char PubTopic[250],SubTopic[250];
 
 protected:
 	void user_map(const char *system_port);

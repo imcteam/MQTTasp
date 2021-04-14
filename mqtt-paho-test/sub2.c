@@ -12,8 +12,8 @@
 #define ADDRESS     "tcp://0.0.0.0:1883"
 //#define ADDRESS     "tcp://broker.hivemq.com:1883"
 #define CLIENTID    "ExampleClientPub2"
-#define TOPIC       "TTCN1"
-#define TOPIC2       "TTCN2"
+#define TOPIC       "TTCN-1"
+#define TOPIC2       "TTCN-2"
 #define QOS         1
 #define TIMEOUT     10000L
 

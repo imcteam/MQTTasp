@@ -29,10 +29,7 @@
 #include <stdio.h>
 
 
-#define ADDRESS     "tcp://0.0.0.0:1883"
 #define CLIENTID    "TTCN_MQTTasp"
-#define TOPIC       "TTCN2"
-#define TOPIC2       "TTCN1"
 #define QOS         1
 #define TIMEOUT     10000L
 
@@ -47,8 +44,9 @@ PCOType::PCOType(const char *par_port_name)
   	localAddr.sin_addr.s_addr = htonl(INADDR_ANY);
   	localAddr.sin_port = htons(8000);
 	target_fd = -1;
-	//puts("PCOType::PCOType\n\n\n");
-
+	strcpy(BrokerAddress,"tcp://0.0.0.0:1883");
+	strcpy(PubTopic,"TTCN2");
+	strcpy(SubTopic,"TTCN1");
 }
 
 PCOType::~PCOType()
@@ -56,10 +54,17 @@ PCOType::~PCOType()
 	//puts("PCOType::~PCOType\n\n\n");
 }
 
-void PCOType::set_parameter(const char * /*parameter_name*/,
-	const char * /*parameter_value*/)
+void PCOType::set_parameter(const char * parameter_name,
+	const char * parameter_value)
 {
-
+	if (!strcmp(parameter_name, "BrokerAddress")) {
+		strcpy(BrokerAddress,(char*)parameter_value);
+	}else if(!strcmp(parameter_name, "PubTopic")){
+		strcpy(PubTopic,(char*)parameter_value);
+	}else if(!strcmp(parameter_name, "SubTopic")){
+		strcpy(SubTopic,(char*)parameter_value);
+	}else
+		TTCN_warning("UDPasp__PT::set_parameter(): Unsupported Test Port parameter: %s", parameter_name);
 }
 
 void PCOType::setUpSocket()
@@ -91,27 +96,27 @@ void PCOType::closeDownSocket()
 unsigned long PCOType::getHostId(const char* hostName)
 {
     //log("UDPasp__PT::getHostId called");
-    unsigned long ipAddress = 0;
+    unsigned long ipBrokerAddress = 0;
 
     if(strcmp(hostName, "255.255.255.255") == 0) {
-      ipAddress = 0xffffffff;
+      ipBrokerAddress = 0xffffffff;
     } else {
       in_addr_t addr = inet_addr(hostName);
       if (addr != (in_addr_t) - 1) {     // host name in XX:XX:XX:XX form
-        ipAddress = addr;
+        ipBrokerAddress = addr;
       }
       else {                               // host name in domain.com form
         struct hostent* hptr;
         if ((hptr = gethostbyname(hostName)) == 0)
           TTCN_error("The host name %s is not valid.", hostName);
-          ipAddress = *((unsigned long*)hptr->h_addr_list[0]);
+          ipBrokerAddress = *((unsigned long*)hptr->h_addr_list[0]);
       }
     }
 
-   // log("Host name: %s, Host address: %u", (const char*)hostName, ipAddress);
+   // log("Host name: %s, Host BrokerAddress: %u", (const char*)hostName, ipBrokerAddress);
     //log("UDPasp__PT::getHostId exited");
 
-    return htonl ( ipAddress );
+    return htonl ( ipBrokerAddress );
 }
 */
 
@@ -120,7 +125,7 @@ void PCOType::Event_Handler(const fd_set *read_fds,
 	const fd_set *write_fds, const fd_set *error_fds,
 	double time_since_last_call)
 {
-	//puts("Begin of  PCOType::Event_Handler\n\n\n");//标记
+	//puts("Begin of  PCOType::Event_Handler\n");//标记
 	unsigned char msg[65535];        // Allocate memory for possible messages
   	int msgLength;
   	struct sockaddr_in remoteAddr;
@@ -130,36 +135,6 @@ void PCOType::Event_Handler(const fd_set *read_fds,
 	msg[msgLength] = '\0';  
 	puts((char*)msg);
 	incoming_message(CHARSTRING(msgLength, (char*)msg));
-
-	// memset(buff,0,sizeof(buff));
-    //     if(read(fd,buff,sizeof(buff)))
-	// 	    {
-	// 		    printf("read named_pipe:%s\n", buff);
-	// 		  }
-	// 		  puts("CHARSTRING(sizeof(buff), buff)");
-			 // incoming_message("Hello, TTCN-3!");
-      		//Uninstall_Handler();
-	/*size_t buf_len = 0, buf_size = 32;
-	char *buf = (char*)Malloc(buf_size);
-	for ( ; ; ) {
-		int c = getc(stdin);
-		if (c == EOF) {
-			if (buf_len > 0) incoming_message(CHARSTRING(buf_len, buf));
-			Uninstall_Handler();
-			break;
-		} else if (c == '\n') {
-			incoming_message(CHARSTRING(buf_len, buf));
-			break;
-		} else {
-			if (buf_len >= buf_size) {
-				buf_size *= 2;
-				buf = (char*)Realloc(buf, buf_size);
-			}
-			buf[buf_len++] = c;
-		}
-	}
-	Free(buf);*/
-	//puts("End of  PCOType::Event_Handler\n\n\n");//标记
 }
 
 /*void PCOType::Handle_Fd_Event(int fd, boolean is_readable,
@@ -185,7 +160,7 @@ void PCOType::Handle_Timeout(double time_since_last_call) {}*/
 void PCOType::user_map(const char *system_port)
 {
 	//puts("Begin of MQTTasp::user_map\n");
-	if ((rc = MQTTClient_create(&client, ADDRESS, CLIENTID,
+	if ((rc = MQTTClient_create(&client, (char *)BrokerAddress, CLIENTID,
         MQTTCLIENT_PERSISTENCE_NONE, NULL)) != MQTTCLIENT_SUCCESS)
     {
          printf("Failed to create client, return code %d\n", rc);
@@ -206,7 +181,7 @@ void PCOType::user_map(const char *system_port)
         exit(EXIT_FAILURE);
     }
 
-	if ((rc = MQTTClient_subscribe(client, TOPIC2, QOS)) != MQTTCLIENT_SUCCESS)
+	if ((rc = MQTTClient_subscribe(client, SubTopic, QOS)) != MQTTCLIENT_SUCCESS)
     {
     	printf("Failed to subscribe, return code %d\n", rc);
     	rc = EXIT_FAILURE;
@@ -222,7 +197,6 @@ void PCOType::user_map(const char *system_port)
 void PCOType::user_unmap(const char *system_port)
 {
 	//puts("Begin of MQTTasp::user_unmap\n");
-
 	if ((rc = MQTTClient_disconnect(client, 10000)) != MQTTCLIENT_SUCCESS)
     	printf("Failed to disconnect, return code %d\n", rc);
     MQTTClient_destroy(&client);
@@ -246,12 +220,12 @@ void PCOType::outgoing_send(const CHARSTRING& send_par)
 	//incoming_message("Hello, TTCN-3!");//receive
 	//fflush(stdout);
 	char PAYLOAD[256];
-	sprintf(PAYLOAD, "%s", (const char*)send_par);
+	strcpy(PAYLOAD,(const char*)send_par);
 	pubmsg.payload = PAYLOAD;
     pubmsg.payloadlen =  (int)strlen(PAYLOAD);
     pubmsg.qos = QOS;
     pubmsg.retained = 0;
-    if ((rc = MQTTClient_publishMessage(client, TOPIC, &pubmsg, &token)) != MQTTCLIENT_SUCCESS)
+    if ((rc = MQTTClient_publishMessage(client, PubTopic, &pubmsg, &token)) != MQTTCLIENT_SUCCESS)
     {
          printf("Failed to publish message, return code %d\n", rc);
          exit(EXIT_FAILURE);
@@ -262,7 +236,7 @@ void PCOType::outgoing_send(const MQTT__Data& send_par)
 {
 	//puts("outgoing_send(const MQTT__Data& send_par)");
 	char PAYLOAD[256];
-	sprintf(PAYLOAD, "%s", (const char*)send_par.data());
+	strcpy(PAYLOAD,(const char*)send_par.data());
 	pubmsg.payload = PAYLOAD;
     pubmsg.payloadlen =  (int)strlen(PAYLOAD);
     pubmsg.qos = QOS;
@@ -282,7 +256,7 @@ void PCOType::outgoing_send(const MQTT__Data& send_par)
 		}
 	}
 	else{
-		if ((rc = MQTTClient_publishMessage(client, TOPIC, &pubmsg, &token)) != MQTTCLIENT_SUCCESS)
+		if ((rc = MQTTClient_publishMessage(client, PubTopic, &pubmsg, &token)) != MQTTCLIENT_SUCCESS)
     	{
          	printf("Failed to publish message, return code %d\n", rc);
          	exit(EXIT_FAILURE);
@@ -327,7 +301,7 @@ int PCOType::msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_m
   	len = sizeof(addr_serv);  
     
   	char send_buf[256];   
-	sprintf(send_buf,"%s",(char*)message->payload);
+	strcpy(send_buf,(char*)message->payload);
   	sendto(sock_fd, send_buf, strlen(send_buf), 0, (struct sockaddr *)&addr_serv, len);  
     
   /*if(send_num < 0)  
