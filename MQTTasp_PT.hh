@@ -17,10 +17,11 @@
 // You may modify this file. Add your attributes and prototypes of your
 // member functions here.
 
-#ifndef PCOType_HH
-#define PCOType_HH
+#ifndef MQTTasp__PT_HH
+#define MQTTasp__PT_HH
 
-#include "MyExample.hh"
+#include  <TTCN3.hh>
+#include  "MQTTasp_Types.hh"
 #include "MQTTClient.h"
 
 #include <stdio.h>
@@ -37,11 +38,16 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-namespace MyExample {
-class PCOType : public PCOType_BASE {
+namespace MQTTasp__Types{
+	class MQTT__Data;
+}
+
+namespace MQTTasp__PortType {
+
+class MQTTasp__PT_PROVIDER : public PORT {
 public:
-	PCOType(const char *par_port_name = NULL);
-	~PCOType();
+	MQTTasp__PT_PROVIDER(const char *par_port_name = NULL);
+	~MQTTasp__PT_PROVIDER();
 	void set_parameter(const char *parameter_name,const char *parameter_value);
 	void Event_Handler(const fd_set *read_fds,const fd_set *write_fds, const fd_set *error_fds,
 		double time_since_last_call);
@@ -69,7 +75,8 @@ protected:
 	void user_stop();
 
 	void outgoing_send(const CHARSTRING& send_par);
-	void outgoing_send(const MQTT__Data& send_par);
+	void outgoing_send(const MQTTasp__Types::MQTT__Data& send_par);
+	virtual void incoming_message(const CHARSTRING& incoming_par) = 0;
 	void setUpSocket();
 	void closeDownSocket();
 	//unsigned long getHostId(const char* destHostName);

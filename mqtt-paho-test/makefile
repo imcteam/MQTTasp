@@ -20,5 +20,5 @@ sub2:
 	gcc -o sub2 sub2.c -lpaho-mqtt3cs -lpthread
 
 clean:
-	-rm sub pub pub2
+	-rm sub pub pub2 sub2
 

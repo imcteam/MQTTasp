@@ -14,24 +14,26 @@
 // TTCN-3 version of "Hello, world!"
 module MyExample
 {
-  type charstring Topic;
-  type charstring Data;
+//   type charstring Topic;
+//   type charstring Data;
 
-  type record MQTT_Data {    // kept for compatibility
-	  Data       data,
-	  Topic       pub optional,
-    Topic       sub optional
-  }
+//   type record MQTT_Data {    // kept for compatibility
+// 	  Data       data,
+// 	  Topic       pub optional,
+//     Topic       sub optional
+//   }
 
-type port PCOType message
-{
-  inout charstring;
-  out  MQTT_Data;
-}
+// type port PCOType message
+// {
+//   inout charstring;
+//   out  MQTT_Data;
+// }
+import from MQTTasp_Types all;
+import from MQTTasp_PortType all;
 
 type component MTCType
 {
-  port PCOType MyPCO;
+  port MQTTasp_PT MyPCO;
 }
 
 testcase HelloW0() runs on MTCType system MTCType
