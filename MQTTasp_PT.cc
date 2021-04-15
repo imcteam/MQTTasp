@@ -28,12 +28,15 @@ namespace MQTTasp__PortType {
 MQTTasp__PT_PROVIDER::MQTTasp__PT_PROVIDER(const char *par_port_name)
 	: PORT(par_port_name),target_fd(-1)
 {
-	 conn_opts = MQTTClient_connectOptions_initializer;
-	 pubmsg = MQTTClient_message_initializer;
-	 localAddr.sin_family = AF_INET;
-  	localAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-  	localAddr.sin_port = htons(8000);
+//UDP参数初始化
+	localAddr.sin_family = AF_INET;
+	localAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	localAddr.sin_port = htons(8000);
 	target_fd = -1;
+
+//MQTT参数初始化
+	conn_opts = MQTTClient_connectOptions_initializer;
+	pubmsg = MQTTClient_message_initializer;
 	strcpy(BrokerAddress,"tcp://0.0.0.0:1883");
 	strcpy(PubTopic,"TTCN2");
 	strcpy(SubTopic,"TTCN1");
@@ -41,11 +44,11 @@ MQTTasp__PT_PROVIDER::MQTTasp__PT_PROVIDER(const char *par_port_name)
 
 MQTTasp__PT_PROVIDER::~MQTTasp__PT_PROVIDER()
 {
-	//puts("MQTTasp__PT_PROVIDER::~MQTTasp__PT_PROVIDER\n\n\n");
+
 }
 
 void MQTTasp__PT_PROVIDER::set_parameter(const char * parameter_name,
-	const char * parameter_value)
+	const char * parameter_value)//处理动态配置文件
 {
 	if (!strcmp(parameter_name, "BrokerAddress")) {
 		strcpy(BrokerAddress,(char*)parameter_value);
@@ -57,50 +60,40 @@ void MQTTasp__PT_PROVIDER::set_parameter(const char * parameter_name,
 		TTCN_warning("UDPasp__PT::set_parameter(): Unsupported Test Port parameter: %s", parameter_name);
 }
 
-void MQTTasp__PT_PROVIDER::setUpSocket()
+void MQTTasp__PT_PROVIDER::setUpSocket()//启动socket
 {
-  //log("entering UDPasp__PT::setUpSocket()");
-
   /* socket creation */
   if((target_fd = socket(AF_INET,SOCK_DGRAM,0))<0) {
     TTCN_error("Cannot open socket \n");
   }
   
-  //log("Binding port...");
   if(bind(target_fd, (struct sockaddr *) &localAddr, sizeof(localAddr))<0) {
     TTCN_error("Cannot bind port\n");
   }
-
-  //log("leaving UDPasp__PT::setUpSocket()");
 }
 
-void MQTTasp__PT_PROVIDER::closeDownSocket()
+void MQTTasp__PT_PROVIDER::closeDownSocket()//关闭socket
 {
-  //log("entering UDPasp__PT::closeDownSocket()");
   close(target_fd);
   target_fd = -1;
-  //log("entering UDPasp__PT::closeDownSocket()");
 }
 
-void MQTTasp__PT_PROVIDER::Event_Handler(const fd_set *read_fds,
+void MQTTasp__PT_PROVIDER::Event_Handler(const fd_set *read_fds,//接收触发
 	const fd_set *write_fds, const fd_set *error_fds,
 	double time_since_last_call)
 {
-	//puts("Begin of  MQTTasp__PT_PROVIDER::Event_Handler\n");//标记
-	unsigned char msg[65535];        // Allocate memory for possible messages
+	unsigned char msg[65535];        //存储接受数据
   	int msgLength;
   	struct sockaddr_in remoteAddr;
   	socklen_t addr_length = sizeof(remoteAddr);
 	if ((msgLength = recvfrom(target_fd, (char*)msg, sizeof(msg), 0, (struct sockaddr*)&remoteAddr, &addr_length)) < 0)
 		TTCN_error("Error when reading the received UDP PDU.");
 	msg[msgLength] = '\0';  
-	puts((char*)msg);
 	incoming_message(CHARSTRING(msgLength, (char*)msg));
 }
 
-void MQTTasp__PT_PROVIDER::user_map(const char *system_port)
+void MQTTasp__PT_PROVIDER::user_map(const char *system_port)//端口映射
 {
-	//puts("Begin of MQTTasp::user_map\n");
 	if ((rc = MQTTClient_create(&client, (char *)BrokerAddress, CLIENTID,
         MQTTCLIENT_PERSISTENCE_NONE, NULL)) != MQTTCLIENT_SUCCESS)
     {
@@ -135,9 +128,8 @@ void MQTTasp__PT_PROVIDER::user_map(const char *system_port)
     Install_Handler(&readfds, NULL, NULL, 0.0);
 }
 
-void MQTTasp__PT_PROVIDER::user_unmap(const char *system_port)
+void MQTTasp__PT_PROVIDER::user_unmap(const char *system_port)//解除端口映射
 {
-	//puts("Begin of MQTTasp::user_unmap\n");
 	if ((rc = MQTTClient_disconnect(client, 10000)) != MQTTCLIENT_SUCCESS)
     	printf("Failed to disconnect, return code %d\n", rc);
     MQTTClient_destroy(&client);
@@ -155,11 +147,9 @@ void MQTTasp__PT_PROVIDER::user_stop()
 
 }
 
+//参数为string的数据发布
 void MQTTasp__PT_PROVIDER::outgoing_send(const CHARSTRING& send_par)
 {
-	//puts((const char*)send_par);
-	//incoming_message("Hello, TTCN-3!");//receive
-	//fflush(stdout);
 	char PAYLOAD[256];
 	strcpy(PAYLOAD,(const char*)send_par);
 	pubmsg.payload = PAYLOAD;
@@ -173,9 +163,9 @@ void MQTTasp__PT_PROVIDER::outgoing_send(const CHARSTRING& send_par)
     }
 }
 
+//参数为MQTT_Data的数据发送
 void MQTTasp__PT_PROVIDER::outgoing_send(const MQTTasp__Types::MQTT__Data& send_par)
 {
-	//puts("outgoing_send(const MQTT__Data& send_par)");
 	char PAYLOAD[256];
 	strcpy(PAYLOAD,(const char*)send_par.data());
 	pubmsg.payload = PAYLOAD;
@@ -214,8 +204,7 @@ void MQTTasp__PT_PROVIDER::outgoing_send(const MQTTasp__Types::MQTT__Data& send_
 
 void MQTTasp__PT_PROVIDER::delivered(void *context, MQTTClient_deliveryToken dt)
 {
-    //printf("Message with token value %d delivery confirmed\n", dt);
-    //deliveredtoken = dt;
+
 }
 
 int MQTTasp__PT_PROVIDER::msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *message)
@@ -225,14 +214,7 @@ int MQTTasp__PT_PROVIDER::msgarrvd(void *context, char *topicName, int topicLen,
     //printf("   message: %.*s\n", message->payloadlen, (char*)message->payload);
 
 	int sock_fd;  
-  
   	sock_fd = socket(AF_INET, SOCK_DGRAM, 0);  
-  	/*if(sock_fd < 0)  
-  	{  
-    	perror("socket");  
-    	exit(1);  
-  	}	  */
-    
   	struct sockaddr_in addr_serv;  
   	int len;  
   	memset(&addr_serv, 0, sizeof(addr_serv));  
@@ -244,12 +226,6 @@ int MQTTasp__PT_PROVIDER::msgarrvd(void *context, char *topicName, int topicLen,
   	char send_buf[256];   
 	strcpy(send_buf,(char*)message->payload);
   	sendto(sock_fd, send_buf, strlen(send_buf), 0, (struct sockaddr *)&addr_serv, len);  
-    
-  /*if(send_num < 0)  
-  {  
-    perror("sendto error:");  
-    exit(1);  
-  }  */
 
     MQTTClient_freeMessage(&message);
     MQTTClient_free(topicName);

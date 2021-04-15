@@ -28,7 +28,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-namespace MQTTasp__Types{
+namespace MQTTasp__Types{//端口数据类型申明
 	class MQTT__Data;
 }
 
@@ -38,22 +38,30 @@ class MQTTasp__PT_PROVIDER : public PORT {
 public:
 	MQTTasp__PT_PROVIDER(const char *par_port_name = NULL);
 	~MQTTasp__PT_PROVIDER();
+
 	void set_parameter(const char *parameter_name,const char *parameter_value);
 	void Event_Handler(const fd_set *read_fds,const fd_set *write_fds, const fd_set *error_fds,
 		double time_since_last_call);
+
+//MQTT回调函数
 	static void delivered(void *context, MQTTClient_deliveryToken dt);
 	static int msgarrvd(void *context, char *topicName, int topicLen, MQTTClient_message *message);//mqtt sub
 	static void connlost(void *context, char *cause);
 	volatile MQTTClient_deliveryToken deliveredtoken;
 
 private:
+//MQTT客户端句柄
 	MQTTClient client;
     MQTTClient_connectOptions conn_opts;
     MQTTClient_message pubmsg;
     MQTTClient_deliveryToken token;
     int rc;
+
+//UDP客户端句柄
 	int target_fd;
 	struct sockaddr_in localAddr;
+
+//动态配置参数
 	char BrokerAddress[250];
 	char PubTopic[250],SubTopic[250];
 
@@ -69,9 +77,7 @@ protected:
 	virtual void incoming_message(const CHARSTRING& incoming_par) = 0;
 	void setUpSocket();
 	void closeDownSocket();
-	//unsigned long getHostId(const char* destHostName);
 
-	
 };
 
 } /* end of namespace */
