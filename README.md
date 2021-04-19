@@ -81,10 +81,10 @@ TestPort.send("Hello!");
 第二种为MQTT_Data类型结构体，结构体定义如下，其中pub和sub可省：
 
 ```
-type record MQTT_Data {    
+type record MQTT_Data { 
 	    Data       data,
 	    Topic       pub optional,
-          Topic       sub optional
+       Topic       sub optional
 }
 ```
 
