@@ -9,6 +9,7 @@
 
 #include "MQTTasp_PT.hh"
 #include "memory.h"
+#include "cJSON.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -89,7 +90,26 @@ void MQTTasp__PT_PROVIDER::Event_Handler(const fd_set *read_fds,//接收触发
 	if ((msgLength = recvfrom(target_fd, (char*)msg, sizeof(msg), 0, (struct sockaddr*)&remoteAddr, &addr_length)) < 0)
 		TTCN_error("Error when reading the received UDP PDU.");
 	msg[msgLength] = '\0';  
-	incoming_message(CHARSTRING(msgLength, (char*)msg), TTCN_Runtime::now());
+//	printf("%s\n\n",(char*)msg);
+	cJSON* cjson_root = cJSON_Parse((char*)msg);
+	if(cjson_root == NULL)
+    {
+        printf("parse fail.\n");
+        return ;
+    }
+	cJSON* cjson_topic = cJSON_GetObjectItem(cjson_root, "topic");
+    cJSON* cjson_message = cJSON_GetObjectItem(cjson_root, "message");
+
+	//printf("cjson_topic:%s\n\n",(char*)cjson_topic->valuestring);
+	//printf("cjson_message:%s\n\n",(char*)cjson_message->valuestring);
+
+	MQTTasp__Types::Sub__Message parameters;
+	parameters.topic() = CHARSTRING((char*)cjson_topic->valuestring);
+	parameters.data() = CHARSTRING((char*)cjson_message->valuestring);
+
+	incoming_message(parameters,TTCN_Runtime::now());
+	
+	//incoming_message(CHARSTRING(msgLength, (char*)msg), TTCN_Runtime::now());
 }
 
 void MQTTasp__PT_PROVIDER::user_map(const char *system_port)//端口映射
@@ -174,38 +194,49 @@ void MQTTasp__PT_PROVIDER::outgoing_send(const MQTTasp__Types::MQTT__Data& send_
 		*timestamp_redirect = TTCN_Runtime::now();
 	}
 
-	char PAYLOAD[256];
-	strcpy(PAYLOAD,(const char*)send_par.data());
-	pubmsg.payload = PAYLOAD;
-    pubmsg.payloadlen =  (int)strlen(PAYLOAD);
-    pubmsg.qos = QOS;
-    pubmsg.retained = 0;
-	if(send_par.pub().ispresent()){
-		if ((rc = MQTTClient_publishMessage(client, (const char*)send_par.pub()(), &pubmsg, &token)) != MQTTCLIENT_SUCCESS)
-    	{
-         	printf("Failed to publish message, return code %d\n", rc);
-         	exit(EXIT_FAILURE);
-    	}
-		if(send_par.sub().ispresent()){
-			if ((rc = MQTTClient_subscribe(client, (const char*)send_par.sub()(), QOS)) != MQTTCLIENT_SUCCESS)
-    		{
-    			printf("Failed to subscribe, return code %d\n", rc);
-    			rc = EXIT_FAILURE;
-    		}
+	if(send_par.data().ispresent()){
+		char PAYLOAD[256];
+		strcpy(PAYLOAD,(const char*)send_par.data()());
+		pubmsg.payload = PAYLOAD;
+		pubmsg.payloadlen =  (int)strlen(PAYLOAD);
+		pubmsg.qos = QOS;
+		pubmsg.retained = 0;
+		if(send_par.pub().ispresent()){
+			if ((rc = MQTTClient_publishMessage(client, (const char*)send_par.pub()(), &pubmsg, &token)) != MQTTCLIENT_SUCCESS)
+			{
+				printf("Failed to publish message, return code %d\n", rc);
+				exit(EXIT_FAILURE);
+			}
+			if(send_par.sub().ispresent()){
+				if ((rc = MQTTClient_subscribe(client, (const char*)send_par.sub()(), QOS)) != MQTTCLIENT_SUCCESS)
+				{
+					printf("Failed to subscribe, return code %d\n", rc);
+					rc = EXIT_FAILURE;
+				}
+			}
+		}
+		else{
+			if ((rc = MQTTClient_publishMessage(client, PubTopic, &pubmsg, &token)) != MQTTCLIENT_SUCCESS)
+			{
+				printf("Failed to publish message, return code %d\n", rc);
+				exit(EXIT_FAILURE);
+			}
+			if(send_par.sub().ispresent()){
+				if ((rc = MQTTClient_subscribe(client, (const char*)send_par.sub()(), QOS)) != MQTTCLIENT_SUCCESS)
+				{
+					printf("Failed to subscribe, return code %d\n", rc);
+					rc = EXIT_FAILURE;
+				}
+			}
 		}
 	}
 	else{
-		if ((rc = MQTTClient_publishMessage(client, PubTopic, &pubmsg, &token)) != MQTTCLIENT_SUCCESS)
-    	{
-         	printf("Failed to publish message, return code %d\n", rc);
-         	exit(EXIT_FAILURE);
-    	}
 		if(send_par.sub().ispresent()){
 			if ((rc = MQTTClient_subscribe(client, (const char*)send_par.sub()(), QOS)) != MQTTCLIENT_SUCCESS)
-    		{
-    			printf("Failed to subscribe, return code %d\n", rc);
-    			rc = EXIT_FAILURE;
-    		}
+			{
+				printf("Failed to subscribe, return code %d\n", rc);
+				rc = EXIT_FAILURE;
+			}
 		}
 	}
 }
@@ -232,7 +263,9 @@ int MQTTasp__PT_PROVIDER::msgarrvd(void *context, char *topicName, int topicLen,
   	len = sizeof(addr_serv);  
     
   	char send_buf[256];   
-	strcpy(send_buf,(char*)message->payload);
+	sprintf(send_buf,"{\"topic\":\"%s\",\"message\":\"%s\"}",topicName,(char*)message->payload);
+	//printf("%s\n\n",send_buf);
+	//strcpy(send_buf,(char*)message->payload);
   	sendto(sock_fd, send_buf, strlen(send_buf), 0, (struct sockaddr *)&addr_serv, len);  
 
     MQTTClient_freeMessage(&message);

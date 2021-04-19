@@ -4,8 +4,9 @@ module MQTTasp_PortType
 
   type port MQTTasp_PT message realtime
     {
-        inout charstring;
+        out charstring;
         out  MQTT_Data;
+        in Sub_Message;
     }with{extension "provider"}
 
 }

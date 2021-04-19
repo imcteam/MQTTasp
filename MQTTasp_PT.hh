@@ -14,6 +14,8 @@
 #include  "MQTTasp_Types.hh"
 #include "MQTTClient.h"
 
+#include "cJSON.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -74,7 +76,7 @@ protected:
 
 	void outgoing_send(const CHARSTRING& send_par, FLOAT* timestamp_redirect);
 	void outgoing_send(const MQTTasp__Types::MQTT__Data& send_par, FLOAT* timestamp_redirect);
-	virtual void incoming_message(const CHARSTRING& incoming_par, const FLOAT& timestamp = FLOAT()) = 0;
+	virtual void incoming_message(const MQTTasp__Types::Sub__Message& incoming_par, const FLOAT& timestamp = FLOAT()) = 0;
 	void setUpSocket();
 	void closeDownSocket();
 

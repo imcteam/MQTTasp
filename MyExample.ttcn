@@ -25,7 +25,7 @@ testcase HelloW0() runs on MTCType system MTCType
   MyPCO.send(send1);
   T.start;
   alt {
-    [] MyPCO.receive("hi") { T.stop; }
+    [] MyPCO.receive({"TTCN-1","hi"}) { T.stop; }
     [] T.timeout { setverdict(inconc); }
     [] MyPCO.receive { T.stop; setverdict(fail); }
   }
@@ -34,7 +34,7 @@ testcase HelloW0() runs on MTCType system MTCType
   MyPCO.send(send2);
   T.start;
   alt {
-    [] MyPCO.receive("hi") { T.stop;}
+    [] MyPCO.receive({"TTCN-1","hi"}) { T.stop;}
     [] T.timeout { setverdict(inconc); }
     [] MyPCO.receive { T.stop; setverdict(fail); }
   }
@@ -43,7 +43,7 @@ testcase HelloW0() runs on MTCType system MTCType
   MyPCO.send(send3);
   T.start;
   alt {
-    [] MyPCO.receive("hi") { T.stop; setverdict(pass); }
+    [] MyPCO.receive({"TTCN-1","hi"}) { T.stop; setverdict(pass); }
     [] T.timeout { setverdict(inconc); }
     [] MyPCO.receive { T.stop; setverdict(fail); }
   }
@@ -57,7 +57,7 @@ testcase HelloW1() runs on MTCType system MTCType
   MyPCO.send("Hello!");
   T.start;
   alt {
-    [] MyPCO.receive("hi") { T.stop; setverdict(pass); }
+    [] MyPCO.receive({"TTCN-1","hi"}) { T.stop; setverdict(pass); }
     [] T.timeout { setverdict(inconc); }
     [] MyPCO.receive { T.stop; setverdict(fail); }
   }
@@ -71,7 +71,7 @@ testcase HelloW2() runs on MTCType system MTCType
   MyPCO.send("Good Bye!");
   T.start;
   alt {
-    [] MyPCO.receive("bye") { T.stop; setverdict(pass); }
+    [] MyPCO.receive({"TTCN-1","bye"}) { T.stop; setverdict(pass); }
     [] T.timeout { setverdict(inconc); }
     [] MyPCO.receive { T.stop; setverdict(fail); }
   }
@@ -84,25 +84,32 @@ testcase HelloW3() runs on MTCType system MTCType
   map(mtc:MyPCO, system:MyPCO);
 
   var float time_start := now, time_send, time_receive;
+  var charstring str1 := "Good";
+  var charstring str2 := " ";
+  var Sub_Message str3;
 
-  MyPCO.send("Good Bye!") -> timestamp time_send;
+  MyPCO.send(str1 & str2 & "Bye!") -> timestamp time_send;
   log(time_start);  
   log(time_send);
   T.start;
   alt {
-    [] MyPCO.receive("bye")-> timestamp time_receive { T.stop; setverdict(pass); }
+    [] MyPCO.receive(Sub_Message :?) -> value str3{
+      T.stop; 
+     log(str3);
+      setverdict(pass); 
+      }
     [] T.timeout { setverdict(inconc); }
-    [] MyPCO.receive -> timestamp time_receive { T.stop; setverdict(fail); }
+    //[] MyPCO.receive -> timestamp time_receive { T.stop; setverdict(fail); }
   }
-  log(time_receive);
+  //log(time_receive);
   unmap(mtc:MyPCO, system:MyPCO);
 }
 
 control
 {
-  // execute(HelloW0());
-  // execute(HelloW1());
-  // execute(HelloW2());
+    execute(HelloW0());
+    execute(HelloW1());
+  execute(HelloW2());
   execute(HelloW3());
 }
 }

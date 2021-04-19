@@ -83,18 +83,18 @@ ASN1_MODULES =
 
 # C++ source & header files generated from the TTCN-3 & ASN.1 modules of
 # this project:
-GENERATED_SOURCES = MyExample.cc MQTTasp_Types.cc MQTTasp_PortType.cc
-GENERATED_HEADERS = MyExample.hh MQTTasp_Types.hh MQTTasp_PortType.hh
+GENERATED_SOURCES = MyExample.cc MQTTasp_Types.cc MQTTasp_PortType.cc 
+GENERATED_HEADERS = MyExample.hh MQTTasp_Types.hh MQTTasp_PortType.hh 
 
 # C/C++ Source & header files of Test Ports, external functions and
 # other modules:
-USER_SOURCES = MQTTasp_PT.cc
-USER_HEADERS = MQTTasp_PT.hh
+USER_SOURCES = MQTTasp_PT.cc cJSON.c
+USER_HEADERS = MQTTasp_PT.hh cJSON.h
 
 # Object files of this project that are needed for the executable test suite:
 OBJECTS = $(GENERATED_OBJECTS) $(USER_OBJECTS)
 
-GENERATED_OBJECTS = MyExample.o MQTTasp_Types.o MQTTasp_PortType.o
+GENERATED_OBJECTS = MyExample.o MQTTasp_Types.o MQTTasp_PortType.o cJSON.o
 
 USER_OBJECTS = MQTTasp_PT.o
 
